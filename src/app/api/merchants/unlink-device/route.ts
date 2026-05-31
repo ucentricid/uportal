@@ -11,33 +11,28 @@ function generateSignature(body: string, timestamp: string) {
 }
 
 export async function POST(request: NextRequest) {
-  const url = `${BASE_URL}/products/upload-photo`;
-
   try {
+    const body = await request.json();
+    const bodyString = JSON.stringify(body);
     const timestamp = Math.floor(Date.now() / 1000).toString();
-    // For multipart/form-data, signature is calculated from empty body {}
-    const body = '{}';
-    const signature = generateSignature(body, timestamp);
+    const signature = generateSignature(bodyString, timestamp);
 
-    // Get the form data from the request
-    const formData = await request.formData();
-
-    const response = await fetch(url, {
+    const response = await fetch(`${BASE_URL}/unlink-device`, {
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'x-api-key': API_KEY,
         'x-timestamp': timestamp,
         'x-signature': signature,
       },
-      body: formData,
+      body: bodyString,
     });
 
     const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error('Upload photo error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to upload photo' },
+      { success: false, error: 'Failed to unlink device' },
       { status: 500 }
     );
   }

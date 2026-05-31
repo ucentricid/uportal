@@ -10,17 +10,44 @@ function generateSignature(body: string, timestamp: string) {
   return crypto.HmacSHA256(payload, API_SECRET).toString();
 }
 
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  const url = `${BASE_URL}/notifications`;
+
+  try {
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const bodyString = JSON.stringify(body);
+    const signature = generateSignature(bodyString, timestamp);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'x-timestamp': timestamp,
+        'x-signature': signature,
+      },
+      body: bodyString,
+    });
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: 'Failed to create notification' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const page = searchParams.get('page') || '1';
   const limit = searchParams.get('limit') || '20';
-  const search = searchParams.get('search') || '';
 
   const queryParams: any = { page, limit };
-  if (search) queryParams.search = search;
-
   const queryString = new URLSearchParams(queryParams).toString();
-  const url = `${BASE_URL}/merchants?${queryString}`;
+  const url = `${BASE_URL}/notifications?${queryString}`;
 
   try {
     const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -41,68 +68,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch merchants' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PUT(request: NextRequest) {
-  const token = request.nextUrl.pathname.split('/').pop();
-  const body = await request.json();
-
-  const url = `${BASE_URL}/merchants/${token}`;
-
-  try {
-    const timestamp = Math.floor(Date.now() / 1000).toString();
-    const bodyString = JSON.stringify(body);
-    const signature = generateSignature(bodyString, timestamp);
-
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-        'x-timestamp': timestamp,
-        'x-signature': signature,
-      },
-      body: bodyString,
-    });
-
-    const data = await response.json();
-    return NextResponse.json(data);
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, error: 'Failed to update merchant' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(request: NextRequest) {
-  const token = request.nextUrl.pathname.split('/').pop();
-  const url = `${BASE_URL}/merchants/${token}`;
-
-  try {
-    const timestamp = Math.floor(Date.now() / 1000).toString();
-    const body = '{}';
-    const signature = generateSignature(body, timestamp);
-
-    const response = await fetch(url, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-        'x-timestamp': timestamp,
-        'x-signature': signature,
-      },
-    });
-
-    const data = await response.json();
-    return NextResponse.json(data);
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, error: 'Failed to delete merchant' },
+      { success: false, error: 'Failed to fetch notifications' },
       { status: 500 }
     );
   }

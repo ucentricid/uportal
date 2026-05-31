@@ -7,6 +7,7 @@ import {
   Users, 
   Store,
   Package,
+  Megaphone,
   Settings, 
   LogOut, 
   Bell, 
@@ -102,6 +103,7 @@ export default function DashboardLayout({
     { name: 'Users', href: '/dashboard/users', icon: <Users size={20} />, adminOnly: true },
     { name: 'Merchants', href: '/dashboard/merchants', icon: <Store size={20} />, adminOnly: true },
     { name: 'Products', href: '/dashboard/products', icon: <Package size={20} />, adminOnly: true },
+    { name: 'Blast Notif', href: '/dashboard/blast-notif', icon: <Megaphone size={20} />, adminOnly: true },
     { name: 'Settings', href: '/dashboard/settings', icon: <Settings size={20} /> },
   ].filter(item => !item.adminOnly || (user?.role === 'admin' || user?.role === 'superadmin'));
 
