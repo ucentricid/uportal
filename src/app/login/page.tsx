@@ -73,8 +73,9 @@ export default function LoginPage() {
         setForgotEmail('');
       }
     } catch (err: any) {
-      if (err.response?.data?.message) {
-        setForgotError(err.response.data.message);
+      const serverError = err.response?.data?.error || err.response?.data?.message;
+      if (serverError) {
+        setForgotError(serverError);
       } else {
         setForgotError('Failed to send reset password. Please try again.');
       }

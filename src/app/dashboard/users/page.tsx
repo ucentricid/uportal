@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { 
-  UserPlus, 
-  Search, 
-  Edit2, 
-  Trash2, 
-  Shield, 
+import {
+  UserPlus,
+  Search,
+  Edit2,
+  Trash2,
+  Shield,
   User,
   X,
   Loader2,
@@ -43,8 +43,8 @@ export default function UsersPage() {
 
   // Helper to trigger global notification
   const notify = (message: string, type: 'success' | 'error' = 'success') => {
-    window.dispatchEvent(new CustomEvent('show-notification', { 
-      detail: { message, type } 
+    window.dispatchEvent(new CustomEvent('show-notification', {
+      detail: { message, type }
     }));
   };
 
@@ -120,7 +120,7 @@ export default function UsersPage() {
       if (editingUser) {
         const payload = { ...formData };
         if (!payload.password) delete (payload as any).password;
-        
+
         const response = await api.put(`/api/users/${editingUser.id}`, payload);
         if (response.data.success) {
           notify(response.data.message || 'User updated successfully!', 'success');
@@ -197,8 +197,8 @@ export default function UsersPage() {
     }
   };
 
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -238,10 +238,10 @@ export default function UsersPage() {
             <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ position: 'relative', width: '300px' }}>
                 <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input 
-                  type="text" 
-                  placeholder="Search users..." 
-                  className="form-input" 
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  className="form-input"
                   style={{ paddingLeft: '40px', borderRadius: '30px' }}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -288,14 +288,14 @@ export default function UsersPage() {
                           </div>
                         </td>
                         <td style={{ padding: '1rem 1.5rem' }}>
-                          <span style={{ 
-                            display: 'inline-flex', 
-                            alignItems: 'center', 
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
                             gap: '0.25rem',
-                            fontSize: '0.75rem', 
-                            fontWeight: '600', 
-                            padding: '0.2rem 0.5rem', 
-                            borderRadius: '20px', 
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            padding: '0.2rem 0.5rem',
+                            borderRadius: '20px',
                             background: user.role === 'admin' ? 'rgba(43, 58, 85, 0.1)' : 'rgba(130, 140, 155, 0.1)',
                             color: user.role === 'admin' ? 'var(--primary-color)' : 'var(--text-muted)'
                           }}>
@@ -304,12 +304,12 @@ export default function UsersPage() {
                           </span>
                         </td>
                         <td style={{ padding: '1rem 1.5rem' }}>
-                          <button 
+                          <button
                             onClick={() => toggleStatus(user)}
                             disabled={togglingId === user.id}
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
                               gap: '0.4rem',
                               background: 'none',
                               border: 'none',
@@ -363,14 +363,18 @@ export default function UsersPage() {
             <h2 style={{ marginBottom: '0.5rem' }}>{editingUser ? 'Edit User' : 'Create New User'}</h2>
             <p style={{ marginBottom: '2rem' }}>{editingUser ? 'Update the details for this user.' : 'Fill in the details to add a new portal user.'}</p>
             <form onSubmit={handleSubmit}>
-              <div className="form-group"><label className="form-label">Full Name</label><input type="text" className="form-input" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} /></div>
-              <div className="form-group"><label className="form-label">Username</label><input type="text" className="form-input" required value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} /></div>
-              <div className="form-group"><label className="form-label">Email Address</label><input type="email" className="form-input" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} /></div>
-              <div className="form-group"><label className="form-label">Password {editingUser && '(Leave blank to keep current)'}</label><input type="password" className="form-input" required={!editingUser} value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} /></div>
+              <div className="form-group"><label className="form-label">Full Name</label><input type="text" className="form-input" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} /></div>
+              <div className="form-group"><label className="form-label">Username</label><input type="text" className="form-input" required value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} /></div>
+              <div className="form-group"><label className="form-label">Email Address</label><input type="email" className="form-input" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} /></div>
+              <div className="form-group"><label className="form-label">Password {editingUser && '(Leave blank to keep current)'}</label><input type="password" className="form-input" required={!editingUser} value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} /></div>
               <div className="form-group">
                 <label className="form-label">Role</label>
-                <select className="form-input" value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} style={{ appearance: 'none' }}>
-                  <option value="user">User</option><option value="admin">Admin</option><option value="superadmin">Superadmin</option>
+                <select className="form-input" value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} style={{ appearance: 'none' }}>
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                  <option value="superadmin">Superadmin</option>
+                  <option value="affiliate">Affiliate</option>
+                  <option value="sales">Sales</option>
                 </select>
               </div>
               {error && <div className="error-message" style={{ marginBottom: '1.5rem' }}>{error}</div>}
