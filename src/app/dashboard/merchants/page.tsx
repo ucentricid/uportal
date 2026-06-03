@@ -23,10 +23,10 @@ interface Merchant {
   merchant_name: string;
   email: string;
   phone: string;
-  address: string;
+  street_address: string;
   city: string;
   subdistrict: string;
-  regency: string;
+  district: string;
   province: string;
   postal_code: string;
   package: string;
@@ -61,10 +61,10 @@ export default function MerchantsPage() {
     merchant_name: string;
     email: string;
     phone: string;
-    address: string;
+    street_address: string;
     city: string;
     subdistrict: string;
-    regency: string;
+    district: string;
     province: string;
     postal_code: string;
   }>({
@@ -72,10 +72,10 @@ export default function MerchantsPage() {
     merchant_name: '',
     email: '',
     phone: '',
-    address: '',
+    street_address: '',
     city: '',
     subdistrict: '',
-    regency: '',
+    district: '',
     province: '',
     postal_code: ''
   });
@@ -164,12 +164,12 @@ export default function MerchantsPage() {
         merchant_name: 'Coffee Shop', 
         email: 'john@coffee.com', 
         phone: '081234567890', 
-        address: 'Jl. Sudirman No. 123', 
-        city: 'Jakarta', 
-        subdistrict: 'Kebayoran', 
-        regency: 'Jakarta Selatan', 
+        street_address: 'Jl. Sudirman No. 123', 
+        city: 'Jakarta Selatan', 
+        subdistrict: 'Selong', 
+        district: 'Kebayoran Baru', 
         province: 'DKI Jakarta', 
-        postal_code: '12345', 
+        postal_code: '12110', 
         package: 'premium', 
         amount: '500000', 
         status: 'active', 
@@ -219,10 +219,10 @@ export default function MerchantsPage() {
       merchant_name: merchant.merchant_name,
       email: merchant.email,
       phone: merchant.phone,
-      address: merchant.address,
+      street_address: merchant.street_address,
       city: merchant.city,
       subdistrict: merchant.subdistrict,
-      regency: merchant.regency,
+      district: merchant.district,
       province: merchant.province,
       postal_code: merchant.postal_code
     });
@@ -588,8 +588,8 @@ export default function MerchantsPage() {
                   Address
                 </h3>
                 <div style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', lineHeight: '1.8' }}>
-                  <p style={{ fontSize: '0.95rem', margin: 0, color: '#0f172a' }}>{selectedMerchant.address}</p>
-                  <p style={{ fontSize: '0.875rem', margin: '0.25rem 0 0', color: '#475569' }}>{selectedMerchant.subdistrict}, {selectedMerchant.regency}</p>
+                  <p style={{ fontSize: '0.95rem', margin: 0, color: '#0f172a' }}>{selectedMerchant.street_address}</p>
+                  <p style={{ fontSize: '0.875rem', margin: '0.25rem 0 0', color: '#475569' }}>{selectedMerchant.subdistrict}, {selectedMerchant.district}</p>
                   <p style={{ fontSize: '0.875rem', margin: '0.25rem 0 0', color: '#475569' }}>{selectedMerchant.city}, {selectedMerchant.province}</p>
                   <p style={{ fontSize: '0.875rem', margin: '0.25rem 0 0', color: '#475569', fontWeight: '600' }}>{selectedMerchant.postal_code}</p>
                 </div>
@@ -741,7 +741,7 @@ export default function MerchantsPage() {
                   </div>
                   <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                     <label className="form-label">Full Address</label>
-                    <textarea className="form-input" required value={editForm.address} onChange={(e) => setEditForm({...editForm, address: e.target.value})} style={{ minHeight: '80px' }} />
+                    <textarea className="form-input" required value={editForm.street_address} onChange={(e) => setEditForm({...editForm, street_address: e.target.value})} style={{ minHeight: '80px' }} />
                   </div>
                   <div className="form-group">
                     <label className="form-label">City</label>
@@ -752,8 +752,8 @@ export default function MerchantsPage() {
                     <input type="text" className="form-input" required value={editForm.subdistrict} onChange={(e) => setEditForm({...editForm, subdistrict: e.target.value})} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Regency</label>
-                    <input type="text" className="form-input" required value={editForm.regency} onChange={(e) => setEditForm({...editForm, regency: e.target.value})} />
+                    <label className="form-label">District</label>
+                    <input type="text" className="form-input" required value={editForm.district} onChange={(e) => setEditForm({...editForm, district: e.target.value})} />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Province</label>
