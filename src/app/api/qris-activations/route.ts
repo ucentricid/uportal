@@ -15,12 +15,14 @@ export async function GET(request: NextRequest) {
   const page = searchParams.get('page') || '1';
   const limit = searchParams.get('limit') || '20';
   const search = searchParams.get('search') || '';
+  const status = searchParams.get('status') || '';
 
   const queryParams: any = { page, limit };
   if (search) queryParams.search = search;
+  if (status) queryParams.status = status;
 
   const queryString = new URLSearchParams(queryParams).toString();
-  const url = `${BASE_URL}/merchants?${queryString}`;
+  const url = `${BASE_URL}/qris-activations?${queryString}`;
 
   try {
     const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -34,14 +36,16 @@ export async function GET(request: NextRequest) {
         'x-api-key': API_KEY,
         'x-timestamp': timestamp,
         'x-signature': signature,
+        'x-role': 'superadmin',
       },
     });
 
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
+    console.error('Failed to fetch QRIS activations:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch merchants' },
+      { success: false, error: 'Failed to fetch QRIS activations' },
       { status: 500 }
     );
   }

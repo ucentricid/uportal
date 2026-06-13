@@ -6,6 +6,8 @@ import {
   LayoutDashboard, 
   Users, 
   Store,
+  QrCode,
+  CreditCard,
   Package,
   Megaphone,
   Settings, 
@@ -18,7 +20,9 @@ import {
   Loader2,
   AlertTriangle,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Wallet,
+  Scale
 } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/lib/api';
@@ -102,10 +106,17 @@ export default function DashboardLayout({
     { name: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'Users', href: '/dashboard/users', icon: <Users size={20} />, adminOnly: true },
     { name: 'Merchants', href: '/dashboard/merchants', icon: <Store size={20} />, adminOnly: true },
+    { name: 'QRIS Activations', href: '/dashboard/qris-activations', icon: <QrCode size={20} />, superadminOnly: true },
+    { name: 'Transactions', href: '/dashboard/transactions', icon: <CreditCard size={20} />, superadminOnly: true },
+    { name: 'Withdrawal Requests', href: '/dashboard/withdrawals', icon: <Wallet size={20} />, superadminOnly: true },
     { name: 'Products', href: '/dashboard/products', icon: <Package size={20} />, adminOnly: true },
     { name: 'Blast Notif', href: '/dashboard/blast-notif', icon: <Megaphone size={20} />, adminOnly: true },
     { name: 'Settings', href: '/dashboard/settings', icon: <Settings size={20} /> },
-  ].filter(item => !item.adminOnly || (user?.role === 'admin' || user?.role === 'superadmin'));
+  ].filter(item => {
+    if (item.superadminOnly) return user?.role === 'superadmin';
+    if (item.adminOnly) return user?.role === 'admin' || user?.role === 'superadmin';
+    return true;
+  });
 
   return (
     <div className="dashboard-layout">

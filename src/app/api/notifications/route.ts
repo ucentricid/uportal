@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto-js';
 
-const API_KEY = process.env.NEXT_PUBLIC_UKASIR_API_KEY || '';
-const API_SECRET = process.env.NEXT_PUBLIC_UKASIR_API_SECRET || '';
+const API_KEY = process.env.NEXT_PUBLIC_UKASIR_API_KEY || process.env.API_KEY || '';
+const API_SECRET = process.env.NEXT_PUBLIC_UKASIR_API_SECRET || process.env.API_SECRET || '';
 const BASE_URL = process.env.NEXT_PUBLIC_UKASIR_BASE_URL || 'https://api.ukasir.id/v1';
 
 function generateSignature(body: string, timestamp: string) {

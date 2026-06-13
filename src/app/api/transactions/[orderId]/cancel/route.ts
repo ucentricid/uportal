@@ -10,38 +10,33 @@ function generateSignature(body: string, timestamp: string) {
   return crypto.HmacSHA256(payload, API_SECRET).toString();
 }
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const page = searchParams.get('page') || '1';
-  const limit = searchParams.get('limit') || '20';
-  const search = searchParams.get('search') || '';
-
-  const queryParams: any = { page, limit };
-  if (search) queryParams.search = search;
-
-  const queryString = new URLSearchParams(queryParams).toString();
-  const url = `${BASE_URL}/merchants?${queryString}`;
-
+export async function POST(request: NextRequest, { params }: { params: Promise<{ orderId: string }> }) {
+  const { orderId } = await params;
   try {
+    const body = await request.json();
+    const bodyString = JSON.stringify(body);
     const timestamp = Math.floor(Date.now() / 1000).toString();
-    const body = '{}';
-    const signature = generateSignature(body, timestamp);
+    const signature = generateSignature(bodyString, timestamp);
+
+    const url = `${BASE_URL}/cashier-transactions/${orderId}/cancel`;
 
     const response = await fetch(url, {
-      method: 'GET',
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': API_KEY,
         'x-timestamp': timestamp,
         'x-signature': signature,
       },
+      body: bodyString,
     });
 
     const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
+    console.error(`Failed to cancel transaction ${orderId}:`, error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch merchants' },
+      { success: false, error: 'Failed to cancel transaction' },
       { status: 500 }
     );
   }

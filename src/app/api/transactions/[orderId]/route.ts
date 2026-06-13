@@ -10,17 +10,10 @@ function generateSignature(body: string, timestamp: string) {
   return crypto.HmacSHA256(payload, API_SECRET).toString();
 }
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const page = searchParams.get('page') || '1';
-  const limit = searchParams.get('limit') || '20';
-  const search = searchParams.get('search') || '';
+export async function GET(request: NextRequest, { params }: { params: Promise<{ orderId: string }> }) {
+  const { orderId } = await params;
 
-  const queryParams: any = { page, limit };
-  if (search) queryParams.search = search;
-
-  const queryString = new URLSearchParams(queryParams).toString();
-  const url = `${BASE_URL}/merchants?${queryString}`;
+  const url = `${BASE_URL}/cashier-transactions/${orderId}`;
 
   try {
     const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -40,8 +33,9 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
+    console.error(`Failed to fetch transaction status for ${orderId}:`, error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch merchants' },
+      { success: false, error: 'Failed to fetch transaction status' },
       { status: 500 }
     );
   }
