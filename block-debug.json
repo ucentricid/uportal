@@ -1,0 +1,7 @@
+{
+  "status": 200,
+  "data": {
+    "message": "IP undefined berhasil diblokir",
+    "status": "success"
+  }
+}

@@ -14,18 +14,18 @@ import {
   Plus
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import apiLocal from '@/lib/api-local';
 
 interface Product {
   id: string;
-  name: string;
-  slug: string;
-  price: string;
-  photo_url: string | null;
-  description: string | null;
-  status: 'active' | 'inactive';
-  created_at: string;
-  updated_at: string;
+  product_name: string;
+  product_slug?: string;
+  product_price: number;
+  product_image_url: string | null;
+  product_description: string | null;
+  product_status: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export default function ProductsPage() {
@@ -42,6 +42,7 @@ export default function ProductsPage() {
     name: string;
     price: string;
     photo_url: string;
+    photo_file?: File;
     description: string;
     status: 'active' | 'inactive';
   }>({
@@ -55,6 +56,7 @@ export default function ProductsPage() {
     name: string;
     price: string;
     photo_url: string;
+    photo_file?: File;
     description: string;
     status: 'active' | 'inactive';
   }>({
@@ -81,9 +83,9 @@ export default function ProductsPage() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const url = `/api/products?page=1&limit=100`;
-      const response = await axios.get(url);
-      if (response.data.success) {
+      const url = `/api/proxy/products?page=1&limit=100`;
+      const response = await apiLocal.get(url);
+      if (response.data.status === 'success' || response.data.success) {
         setProducts(response.data.data || []);
       }
     } catch (err: any) {
@@ -91,27 +93,10 @@ export default function ProductsPage() {
         setIsForbidden(true);
       } else {
         console.error('Failed to fetch products:', err);
-        setMockProducts();
       }
     } finally {
       setLoading(false);
     }
-  };
-
-  const setMockProducts = () => {
-    setProducts([
-      { 
-        id: '1', 
-        name: 'Sample Product', 
-        slug: 'sample-product', 
-        price: '100000', 
-        photo_url: null, 
-        description: 'This is a sample product', 
-        status: 'active', 
-        created_at: new Date().toISOString(), 
-        updated_at: new Date().toISOString() 
-      },
-    ]);
   };
 
   useEffect(() => {
@@ -123,9 +108,8 @@ export default function ProductsPage() {
   };
 
   const filteredProducts = products.filter(product => 
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    product.slug.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    (product.product_name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (product.product_description && product.product_description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleViewDetail = (product: Product) => {
@@ -141,11 +125,11 @@ export default function ProductsPage() {
   const handleEdit = (product: Product) => {
     setSelectedProduct(product);
     setEditForm({
-      name: product.name,
-      price: product.price,
-      photo_url: product.photo_url || '',
-      description: product.description || '',
-      status: product.status
+      name: product.product_name || '',
+      price: product.product_price?.toString() || '0',
+      photo_url: product.product_image_url || '',
+      description: product.product_description || '',
+      status: product.product_status === 'active' ? 'active' : 'inactive'
     });
     setShowEditModal(true);
   };
@@ -161,55 +145,34 @@ export default function ProductsPage() {
       const product = products.find(p => p.id === id);
       if (!product) return;
 
-      const response = await axios.delete(`/api/products/${product.slug}`);
+      const response = await apiLocal.delete(`/api/proxy/products/${product.id}`);
 
-      if (response.data.success) {
+      if (response.data.status === 'success' || response.data.success) {
         notify('Product deleted successfully', 'success');
         setShowDeleteConfirm(null);
         fetchProducts();
       } else {
-        notify(response.data.error || 'Failed to delete product', 'error');
+        notify(response.data.error || response.data.message || 'Failed to delete product', 'error');
       }
     } catch (err: any) {
       console.error('Error deleting product:', err);
-      notify(err.response?.data?.error || 'Failed to delete product', 'error');
+      notify(err.response?.data?.message || err.response?.data?.error || 'Failed to delete product', 'error');
     } finally {
       setDeleteLoading(false);
     }
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, isCreate: boolean) => {
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>, isCreate: boolean) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    setUploadLoading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append('photo', file);
-
-      const response = await axios.post('/api/products/upload-photo', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      if (response.data.success) {
-        const photoUrl = response.data.data.url;
-        if (isCreate) {
-          setCreateForm({ ...createForm, photo_url: photoUrl });
-        } else {
-          setEditForm({ ...editForm, photo_url: photoUrl });
-        }
-        notify('Photo uploaded successfully', 'success');
-      } else {
-        notify(response.data.error || 'Failed to upload photo', 'error');
-      }
-    } catch (err: any) {
-      console.error('Error uploading photo:', err);
-      notify(err.response?.data?.error || 'Failed to upload photo', 'error');
-    } finally {
-      setUploadLoading(false);
+    
+    // Create local preview URL
+    const previewUrl = URL.createObjectURL(file);
+    
+    if (isCreate) {
+      setCreateForm({ ...createForm, photo_url: previewUrl, photo_file: file });
+    } else {
+      setEditForm({ ...editForm, photo_url: previewUrl, photo_file: file });
     }
   };
 
@@ -218,22 +181,23 @@ export default function ProductsPage() {
     setCreateLoading(true);
 
     try {
-      const body: any = {
-        name: createForm.name,
-        price: parseFloat(createForm.price),
-        status: createForm.status,
-      };
+      const formData = new FormData();
+      formData.append('product_name', createForm.name);
+      formData.append('product_slug', createForm.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''));
+      formData.append('product_price', createForm.price);
+      formData.append('product_status', createForm.status);
+      if (createForm.description) formData.append('product_description', createForm.description);
+      if (createForm.photo_file) {
+        formData.append('product_image', createForm.photo_file);
+      }
 
-      if (createForm.photo_url) body.photo_url = createForm.photo_url;
-      if (createForm.description) body.description = createForm.description;
-
-      const response = await axios.post('/api/products', body, {
+      const response = await apiLocal.post('/api/proxy/products', formData, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'multipart/form-data',
         },
       });
 
-      if (response.data.success) {
+      if (response.data.status === 'success' || response.data.success) {
         fetchProducts();
         setShowCreateModal(false);
         setCreateForm({ name: '', price: '', photo_url: '', description: '', status: 'active' });
@@ -256,22 +220,23 @@ export default function ProductsPage() {
     setEditLoading(true);
 
     try {
-      const body: any = {
-        name: editForm.name,
-        price: parseFloat(editForm.price),
-        status: editForm.status,
-      };
+      const formData = new FormData();
+      formData.append('product_name', editForm.name);
+      formData.append('product_slug', editForm.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''));
+      formData.append('product_price', editForm.price);
+      formData.append('product_status', editForm.status);
+      if (editForm.description) formData.append('product_description', editForm.description);
+      if (editForm.photo_file) {
+        formData.append('product_image', editForm.photo_file);
+      }
 
-      if (editForm.photo_url) body.photo_url = editForm.photo_url;
-      if (editForm.description) body.description = editForm.description;
-
-      const response = await axios.put(`/api/products/${selectedProduct.slug}`, body, {
+      const response = await apiLocal.put(`/api/proxy/products/${selectedProduct.id}`, formData, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'multipart/form-data',
         },
       });
 
-      if (response.data.success) {
+      if (response.data.status === 'success' || response.data.success) {
         fetchProducts();
         closeEditModal();
         notify('Product updated successfully', 'success');
@@ -366,10 +331,10 @@ export default function ProductsPage() {
                         <td style={{ padding: '1rem 1.5rem' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                             <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                              {product.photo_url && !imageErrors[product.id] ? (
+                              {product.product_image_url && !imageErrors[product.id] ? (
                                 <img 
-                                  src={product.photo_url} 
-                                  alt={product.name}
+                                  src={product.product_image_url} 
+                                  alt={product.product_name}
                                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                   onError={() => handleImageError(product.id)}
                                 />
@@ -378,14 +343,14 @@ export default function ProductsPage() {
                               )}
                             </div>
                             <div>
-                              <p style={{ fontWeight: '600', fontSize: '0.9rem', margin: 0 }}>{product.name}</p>
-                              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, fontFamily: 'monospace' }}>{product.slug}</p>
+                              <p style={{ fontWeight: '600', fontSize: '0.9rem', margin: 0 }}>{product.product_name}</p>
+                              {product.product_slug && <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, fontFamily: 'monospace' }}>{product.product_slug}</p>}
                             </div>
                           </div>
                         </td>
                         <td style={{ padding: '1rem 1.5rem' }}>
                           <p style={{ fontWeight: '600', fontSize: '0.95rem', margin: 0, color: 'var(--primary-color)' }}>
-                            Rp {parseInt(product.price).toLocaleString('id-ID')}
+                            Rp {product.product_price?.toLocaleString('id-ID')}
                           </p>
                         </td>
                         <td style={{ padding: '1rem 1.5rem' }}>
@@ -397,15 +362,15 @@ export default function ProductsPage() {
                             fontWeight: '600', 
                             padding: '0.2rem 0.5rem', 
                             borderRadius: '20px', 
-                            background: product.status === 'active' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(100, 116, 139, 0.1)',
-                            color: product.status === 'active' ? 'var(--success-color)' : 'var(--text-muted)'
+                            background: product.product_status === 'active' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(100, 116, 139, 0.1)',
+                            color: product.product_status === 'active' ? 'var(--success-color)' : 'var(--text-muted)'
                           }}>
-                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: product.status === 'active' ? 'var(--success-color)' : 'var(--text-muted)' }}></div>
-                            {product.status.toUpperCase()}
+                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: product.product_status === 'active' ? 'var(--success-color)' : 'var(--text-muted)' }}></div>
+                            {product.product_status === 'active' ? 'ACTIVE' : 'INACTIVE'}
                           </span>
                         </td>
                         <td style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                          {new Date(product.created_at).toLocaleDateString()}
+                          {product.created_at ? new Date(product.created_at).toLocaleDateString() : '-'}
                         </td>
                         <td style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>
                           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
@@ -545,7 +510,7 @@ export default function ProductsPage() {
                     {editForm.photo_url && (
                       <p style={{ fontSize: '0.85rem', color: 'var(--success-color)', marginTop: '0.5rem', fontWeight: '500' }}>✓ Photo uploaded successfully</p>
                     )}
-                    {selectedProduct.photo_url && !editForm.photo_url && (
+                    {selectedProduct.product_image_url && !editForm.photo_url && (
                       <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Current photo exists</p>
                     )}
                   </div>
@@ -579,7 +544,7 @@ export default function ProductsPage() {
                   <Package size={24} />
                 </div>
                 <div>
-                  <h2 style={{ marginBottom: 0, fontSize: '1.5rem' }}>{selectedProduct.name}</h2>
+                  <h2 style={{ marginBottom: 0, fontSize: '1.5rem' }}>{selectedProduct.product_name}</h2>
                   <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-muted)' }}>Product Details Information</p>
                 </div>
               </div>
@@ -588,11 +553,11 @@ export default function ProductsPage() {
             {/* Modal Body */}
             <div style={{ padding: '2rem 2.5rem', overflow: 'auto', maxHeight: 'calc(90vh - 200px)' }}>
               {/* Product Image */}
-              {selectedProduct.photo_url && !imageErrors[selectedProduct.id] && (
+              {selectedProduct.product_image_url && !imageErrors[selectedProduct.id] && (
                 <div style={{ height: '250px', background: 'linear-gradient(135deg, #f8fafc, #e2e8f0)', borderRadius: '12px', overflow: 'hidden', marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #e2e8f0' }}>
                   <img 
-                    src={selectedProduct.photo_url} 
-                    alt={selectedProduct.name}
+                    src={selectedProduct.product_image_url} 
+                    alt={selectedProduct.product_name}
                     style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                     onError={() => handleImageError(selectedProduct.id)}
                   />
@@ -603,16 +568,16 @@ export default function ProductsPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
                 <div style={{ padding: '1.25rem', background: 'linear-gradient(135deg, #fef3c7, #fde68a)', borderRadius: '12px', border: '1px solid #fcd34d' }}>
                   <p style={{ fontSize: '0.75rem', color: '#92400e', marginBottom: '0.25rem', fontWeight: '600' }}>Price</p>
-                  <p style={{ fontSize: '1.25rem', margin: 0, fontWeight: '700', color: '#78350f' }}>Rp {parseInt(selectedProduct.price).toLocaleString('id-ID')}</p>
+                  <p style={{ fontSize: '1.25rem', margin: 0, fontWeight: '700', color: '#78350f' }}>Rp {selectedProduct.product_price?.toLocaleString('id-ID')}</p>
                 </div>
-                <div style={{ padding: '1.25rem', background: selectedProduct.status === 'active' ? 'linear-gradient(135deg, #f0fdf4, #dcfce7)' : 'linear-gradient(135deg, #fef2f2, #fee2e2)', borderRadius: '12px', border: `1px solid ${selectedProduct.status === 'active' ? '#86efac' : '#fca5a5'}` }}>
-                  <p style={{ fontSize: '0.75rem', color: selectedProduct.status === 'active' ? '#15803d' : '#b91c1c', marginBottom: '0.25rem', fontWeight: '600' }}>Status</p>
-                  <p style={{ fontSize: '1rem', margin: 0, fontWeight: '700', color: selectedProduct.status === 'active' ? '#14532d' : '#7f1d1d' }}>{selectedProduct.status.toUpperCase()}</p>
+                <div style={{ padding: '1.25rem', background: selectedProduct.product_status === 'active' ? 'linear-gradient(135deg, #f0fdf4, #dcfce7)' : 'linear-gradient(135deg, #fef2f2, #fee2e2)', borderRadius: '12px', border: `1px solid ${selectedProduct.product_status === 'active' ? '#86efac' : '#fca5a5'}` }}>
+                  <p style={{ fontSize: '0.75rem', color: selectedProduct.product_status === 'active' ? '#15803d' : '#b91c1c', marginBottom: '0.25rem', fontWeight: '600' }}>Status</p>
+                  <p style={{ fontSize: '1rem', margin: 0, fontWeight: '700', color: selectedProduct.product_status === 'active' ? '#14532d' : '#7f1d1d' }}>{selectedProduct.product_status === 'active' ? 'ACTIVE' : 'INACTIVE'}</p>
                 </div>
                 <div style={{ padding: '1.25rem', background: 'linear-gradient(135deg, #f3e8ff, #e9d5ff)', borderRadius: '12px', border: '1px solid #c084fc' }}>
                   <p style={{ fontSize: '0.75rem', color: '#7c3aed', marginBottom: '0.25rem', fontWeight: '600' }}>Created</p>
                   <p style={{ fontSize: '0.875rem', margin: 0, fontWeight: '600', color: '#5b21b6' }}>
-                    {new Date(selectedProduct.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {selectedProduct.created_at ? new Date(selectedProduct.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
                   </p>
                 </div>
               </div>
@@ -626,16 +591,18 @@ export default function ProductsPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
                   <div style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                     <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.35rem', fontWeight: '600' }}>Product Name</p>
-                    <p style={{ fontSize: '1rem', margin: 0, fontWeight: '600', color: '#0f172a' }}>{selectedProduct.name}</p>
+                    <p style={{ fontSize: '1rem', margin: 0, fontWeight: '600', color: '#0f172a' }}>{selectedProduct.product_name}</p>
                   </div>
-                  <div style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                    <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.35rem', fontWeight: '600' }}>Slug</p>
-                    <p style={{ fontSize: '0.95rem', margin: 0, fontFamily: 'monospace', color: '#0f172a' }}>{selectedProduct.slug}</p>
-                  </div>
-                  {selectedProduct.description && (
+                  {selectedProduct.product_slug && (
+                    <div style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                      <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.35rem', fontWeight: '600' }}>Slug</p>
+                      <p style={{ fontSize: '0.95rem', margin: 0, fontFamily: 'monospace', color: '#0f172a' }}>{selectedProduct.product_slug}</p>
+                    </div>
+                  )}
+                  {selectedProduct.product_description && (
                     <div style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', gridColumn: '1 / -1' }}>
                       <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.5rem', fontWeight: '600' }}>Description</p>
-                      <p style={{ fontSize: '0.95rem', margin: 0, color: '#0f172a', lineHeight: '1.7' }}>{selectedProduct.description}</p>
+                      <p style={{ fontSize: '0.95rem', margin: 0, color: '#0f172a', lineHeight: '1.7' }}>{selectedProduct.product_description}</p>
                     </div>
                   )}
                 </div>
@@ -651,13 +618,13 @@ export default function ProductsPage() {
                   <div style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                     <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.35rem', fontWeight: '600' }}>Created At</p>
                     <p style={{ fontSize: '0.95rem', margin: 0, color: '#0f172a' }}>
-                      {new Date(selectedProduct.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {selectedProduct.created_at ? new Date(selectedProduct.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
                     </p>
                   </div>
                   <div style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                     <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.35rem', fontWeight: '600' }}>Updated At</p>
                     <p style={{ fontSize: '0.95rem', margin: 0, color: '#0f172a' }}>
-                      {new Date(selectedProduct.updated_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {selectedProduct.updated_at ? new Date(selectedProduct.updated_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
                     </p>
                   </div>
                 </div>

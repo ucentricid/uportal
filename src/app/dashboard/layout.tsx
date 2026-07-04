@@ -10,8 +10,7 @@ import {
   CreditCard,
   Package,
   Megaphone,
-  Settings, 
-  LogOut, 
+  LogOut,
   Bell, 
   Search,
   Menu,
@@ -22,7 +21,10 @@ import {
   CheckCircle,
   AlertCircle,
   Wallet,
-  Scale
+  Scale,
+  ShieldCheck,
+  UserPlus,
+  History
 } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/lib/api';
@@ -82,7 +84,7 @@ export default function DashboardLayout({
   const handleLogout = async () => {
     setIsLoading(true);
     try {
-      await api.post('/api/auth/logout');
+      await api.post('/api/proxy/auth/logout');
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
@@ -102,17 +104,19 @@ export default function DashboardLayout({
     );
   }
 
-  const navItems = [
+  const navItems: Array<{ name: string; href: string; icon: React.ReactNode; adminOnly?: boolean; superadminOnly?: boolean }> = [
     { name: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'Users', href: '/dashboard/users', icon: <Users size={20} />, adminOnly: true },
     { name: 'Merchants', href: '/dashboard/merchants', icon: <Store size={20} />, adminOnly: true },
-    { name: 'QRIS Activations', href: '/dashboard/qris-activations', icon: <QrCode size={20} />, superadminOnly: true },
-    { name: 'Transactions', href: '/dashboard/transactions', icon: <CreditCard size={20} />, superadminOnly: true },
-    { name: 'Withdrawal Requests', href: '/dashboard/withdrawals', icon: <Wallet size={20} />, superadminOnly: true },
     { name: 'Products', href: '/dashboard/products', icon: <Package size={20} />, adminOnly: true },
-    { name: 'Blast Notif', href: '/dashboard/blast-notif', icon: <Megaphone size={20} />, adminOnly: true },
-    { name: 'Settings', href: '/dashboard/settings', icon: <Settings size={20} /> },
-  ].filter(item => {
+    { name: 'Category Commissions', href: '/dashboard/category-commissions', icon: <Scale size={20} />, adminOnly: true },
+    { name: 'Commissions', href: '/dashboard/commissions', icon: <Wallet size={20} />, adminOnly: true },
+    { name: 'Partnership Users', href: '/dashboard/partnership-users', icon: <UserPlus size={20} />, adminOnly: true },
+    { name: 'IP Whitelist', href: '/dashboard/ip-whitelist', icon: <ShieldCheck size={20} />, superadminOnly: true },
+    { name: 'Audit Logs', href: '/dashboard/audit-logs', icon: <History size={20} />, superadminOnly: true },
+  ];
+
+  const filteredNavItems = navItems.filter(item => {
     if (item.superadminOnly) return user?.role === 'superadmin';
     if (item.adminOnly) return user?.role === 'admin' || user?.role === 'superadmin';
     return true;
@@ -134,7 +138,7 @@ export default function DashboardLayout({
         </div>
 
         <nav className="sidebar-nav">
-          {navItems.map((item) => (
+          {filteredNavItems.map((item) => (
             <Link 
               key={item.name} 
               href={item.href}

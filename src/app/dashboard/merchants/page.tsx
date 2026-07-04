@@ -14,9 +14,10 @@ import {
   Unlink
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import apiLocal from '@/lib/api-local';
 
 interface Merchant {
+  id?: string;
   token_number: string;
   order_id: string;
   name: string;
@@ -102,7 +103,7 @@ export default function MerchantsPage() {
     setShowUnlinkConfirm(false);
 
     try {
-      const response = await axios.post('/api/merchants/unlink-device', {
+      const response = await apiLocal.post('/api/merchants/unlink-device', {
         token: selectedMerchant.token_number,
       });
 
@@ -129,15 +130,15 @@ export default function MerchantsPage() {
   const fetchMerchants = async () => {
     setLoading(true);
     try {
-      const url = `/api/merchants?page=1&limit=100`;
-      const response = await axios.get(url);
+      const url = `/api/proxy/merchants?page=1&limit=100`;
+      const response = await apiLocal.get(url);
       console.log('Fetched merchants count:', response.data.data?.length || 0);
-      if (response.data.success) {
+      if (response.data.status === 'success' || response.data.success) {
         setMerchants(response.data.data || []);
         // Log first merchant to check status_active format
         if (response.data.data && response.data.data.length > 0) {
           console.log('Sample merchant:', {
-            token: response.data.data[0].token_number,
+            token: response.data.data[0].token_number || response.data.data[0].id,
             status_active: response.data.data[0].status_active,
             type: typeof response.data.data[0].status_active
           });
@@ -148,43 +149,10 @@ export default function MerchantsPage() {
         setIsForbidden(true);
       } else {
         console.error('Failed to fetch merchants:', err);
-        setMockMerchants();
       }
     } finally {
       setLoading(false);
     }
-  };
-
-  const setMockMerchants = () => {
-    setMerchants([
-      { 
-        token_number: 'TKN001', 
-        order_id: 'ORD001', 
-        name: 'John Doe', 
-        merchant_name: 'Coffee Shop', 
-        email: 'john@coffee.com', 
-        phone: '081234567890', 
-        street_address: 'Jl. Sudirman No. 123', 
-        city: 'Jakarta Selatan', 
-        subdistrict: 'Selong', 
-        district: 'Kebayoran Baru', 
-        province: 'DKI Jakarta', 
-        postal_code: '12110', 
-        package: 'premium', 
-        amount: '500000', 
-        status: 'active', 
-        payment_method: 'credit_card', 
-        payment_status: 'paid', 
-        midtrans_order_id: 'MT001', 
-        paid_at: new Date().toISOString(), 
-        register_date: new Date().toISOString(), 
-        status_active: true,
-        device_id: 'DEV001',
-        device_name: 'iPhone 13',
-        device_type: 'mobile',
-        referral_code: 'REF001'
-      },
-    ]);
   };
 
   useEffect(() => {
@@ -241,20 +209,26 @@ export default function MerchantsPage() {
     setEditLoading(true);
 
     try {
-      const url = `/api/merchants/${selectedMerchant.token_number}`;
-      const response = await axios.put(url, editForm, {
+      const url = `/api/proxy/merchants/${selectedMerchant.token_number || selectedMerchant.id}`;
+      
+      const formData = new FormData();
+      Object.entries(editForm).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+
+      const response = await apiLocal.put(url, formData, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'multipart/form-data',
         },
         timeout: 10000,
       });
 
-      if (response.data.success) {
+      if (response.data.status === 'success' || response.data.success) {
         fetchMerchants();
         closeEditModal();
         notify('Merchant updated successfully', 'success');
       } else {
-        notify(response.data.error || 'Failed to update merchant', 'error');
+        notify(response.data.error || response.data.message || 'Failed to update merchant', 'error');
       }
     } catch (err: any) {
       console.error('Error updating merchant:', err);
@@ -286,15 +260,21 @@ export default function MerchantsPage() {
         status_active: true
       });
 
-      const url = `/api/merchants/${showExtendConfirm.token_number}`;
-      const response = await axios.put(url, {
-        register_date: formattedDate,
-        status_active: true
+      const url = `/api/proxy/merchants/${showExtendConfirm.token_number || showExtendConfirm.id}`;
+      
+      const formData = new FormData();
+      formData.append('register_date', formattedDate);
+      formData.append('status_active', '1');
+
+      const response = await apiLocal.put(url, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
       });
 
       console.log('API Response:', response.data);
 
-      if (response.data.success) {
+      if (response.data.status === 'success' || response.data.success) {
         // Update local state immediately
         setMerchants(prevMerchants => {
           const updated = prevMerchants.map(m => {
@@ -335,20 +315,20 @@ export default function MerchantsPage() {
   const handleDelete = async (id: string) => {
     setDeleteLoading(true);
     try {
-      const url = `/api/merchants/${id}`;
-      const response = await axios.delete(url, {
+      const url = `/api/proxy/merchants/${id}`;
+      const response = await apiLocal.delete(url, {
         headers: {
           'Content-Type': 'application/json',
         },
         timeout: 10000,
       });
 
-      if (response.data.success) {
+      if (response.data.status === 'success' || response.data.success) {
         notify('Merchant deleted successfully', 'success');
         setShowDeleteConfirm(null);
         fetchMerchants();
       } else {
-        notify(response.data.error || 'Failed to delete merchant', 'error');
+        notify(response.data.error || response.data.message || 'Failed to delete merchant', 'error');
       }
     } catch (err: any) {
       console.error('Error deleting merchant:', err);

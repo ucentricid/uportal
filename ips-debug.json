@@ -1,0 +1,55 @@
+{
+  "data": [
+    {
+      "id": "d49d746d-5856-4533-94ea-a2897734010d",
+      "ip_address": "2404:c0:5d16:6146:c5a3:3f5b:1bfd:547f",
+      "api_key": "dev-ef14666590c612a86559eafc72d0e06353e98357de7a7b9700f539951f6e1ce5",
+      "api_secret": "dev-82cefe332d81c88004795b33cb104c66768c2a485a07b12d908d2fc01ce28a7c",
+      "status": "APPROVED",
+      "last_accessed_at": "2026-07-04T14:45:50.011654Z",
+      "created_at": "2026-07-04T13:15:09.049353Z",
+      "updated_at": "2026-07-04T13:15:09.049353Z"
+    },
+    {
+      "id": "8c101b7d-5127-4ca5-aeb2-b93b62ea0367",
+      "ip_address": "114.124.179.67",
+      "api_key": "dev-ef14666590c612a86559eafc72d0e06353e98357de7a7b9700f539951f6e1ce5",
+      "api_secret": "dev-82cefe332d81c88004795b33cb104c66768c2a485a07b12d908d2fc01ce28a7c",
+      "status": "APPROVED",
+      "last_accessed_at": "2026-07-04T14:47:35.493449Z",
+      "created_at": "2026-07-04T11:45:18.343931Z",
+      "updated_at": "2026-07-04T11:45:18.343931Z"
+    },
+    {
+      "id": "f2f32c41-d0ab-4f8e-b611-c8dda5dff19a",
+      "ip_address": "103.127.139.112",
+      "api_key": "dev-ef14666590c612a86559eafc72d0e06353e98357de7a7b9700f539951f6e1ce5",
+      "api_secret": "dev-82cefe332d81c88004795b33cb104c66768c2a485a07b12d908d2fc01ce28a7c",
+      "status": "APPROVED",
+      "last_accessed_at": "2026-07-04T13:00:17.733739Z",
+      "created_at": "2026-07-04T11:34:10.10653Z",
+      "updated_at": "2026-07-04T11:34:10.10653Z"
+    },
+    {
+      "id": "727a0f7e-4f62-448b-8607-dc9c1c9accb4",
+      "ip_address": "118.99.80.86",
+      "api_key": "dev-ef14666590c612a86559eafc72d0e06353e98357de7a7b9700f539951f6e1ce5",
+      "api_secret": "dev-82cefe332d81c88004795b33cb104c66768c2a485a07b12d908d2fc01ce28a7c",
+      "status": "APPROVED",
+      "last_accessed_at": "2026-07-04T10:36:44.618958Z",
+      "created_at": "2026-07-04T08:53:48.060711Z",
+      "updated_at": "2026-07-04T08:53:48.060711Z"
+    },
+    {
+      "id": "7a9bb3d0-9e8d-430e-adff-dc9a864123f6",
+      "ip_address": "114.124.142.38",
+      "api_key": "dev-ef14666590c612a86559eafc72d0e06353e98357de7a7b9700f539951f6e1ce5",
+      "api_secret": "dev-82cefe332d81c88004795b33cb104c66768c2a485a07b12d908d2fc01ce28a7c",
+      "status": "APPROVED",
+      "last_accessed_at": "2026-07-04T09:06:34.578756Z",
+      "created_at": "2026-07-04T08:53:30.511993Z",
+      "updated_at": "2026-07-04T08:53:30.511993Z"
+    }
+  ],
+  "status": "success"
+}

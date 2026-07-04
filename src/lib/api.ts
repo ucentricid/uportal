@@ -1,11 +1,13 @@
 import axios from 'axios';
 
-// Base URL can be configured via environment variables
-const baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://auth.ucentric.id';
+// The client-side API instance should point to the local Next.js proxy routes
+// which will securely attach the X-API-KEY and X-API-SECRET before forwarding
+// to the actual Backoffice API.
+const api = axios.create({ 
+  withCredentials: true 
+});
 
-const api = axios.create({ baseURL });
-
-// 1. Add Access Token to each Request
+// 1. Add Access Token to each Request (Fallback for Cookie)
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token');
@@ -16,37 +18,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// 2. Automatic Refresh Token if Access Token Expired (403)
+// 2. Handle Unauthorized
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
-    
-    // If rejected by server (403 expired) and not retried yet
-    // Do NOT try to refresh if the request was to the login endpoint
-    if (error.response?.status === 403 && !originalRequest._retry && !originalRequest.url?.includes('/api/auth/login')) {
-      originalRequest._retry = true;
-      let refreshToken = null;
-      if (typeof window !== 'undefined') {
-        refreshToken = localStorage.getItem('refreshToken');
-      }
-      
-      try {
-        const res = await axios.post(`${baseURL}/api/auth/refresh`, { refreshToken });
-        
-        if (res.data.success) {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('token', res.data.data.token);
-          }
-          originalRequest.headers.Authorization = `Bearer ${res.data.data.token}`;
-          return api(originalRequest); // Retry original request
-        }
-      } catch (err) {
-        // Refresh token also expired/deleted, must re-login
-        if (typeof window !== 'undefined') {
-          localStorage.clear();
-          window.location.href = '/login';
-        }
+    // If we get a 401 or 403 on the client side, it means our session is invalid
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      if (typeof window !== 'undefined' && !error.config.url?.includes('/api/proxy/auth/login')) {
+        localStorage.clear();
+        window.location.href = '/login';
       }
     }
     return Promise.reject(error);

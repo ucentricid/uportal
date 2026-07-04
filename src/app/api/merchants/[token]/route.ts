@@ -1,109 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto-js';
+import { ukasirFetch } from '@/lib/ukasir';
+import { requireRole } from '@/lib/auth-server';
 
-const API_KEY = process.env.NEXT_PUBLIC_UKASIR_API_KEY || process.env.API_KEY || '';
-const API_SECRET = process.env.NEXT_PUBLIC_UKASIR_API_SECRET || process.env.API_SECRET || '';
-const BASE_URL = process.env.NEXT_PUBLIC_UKASIR_BASE_URL || 'https://api.ukasir.id/v1';
-
-function generateSignature(body: string, timestamp: string) {
-  const payload = `${API_KEY}:${timestamp}:${body}`;
-  return crypto.HmacSHA256(payload, API_SECRET).toString();
-}
-
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const page = searchParams.get('page') || '1';
-  const limit = searchParams.get('limit') || '20';
-  const search = searchParams.get('search') || '';
-
-  const queryParams: any = { page, limit };
-  if (search) queryParams.search = search;
-
-  const queryString = new URLSearchParams(queryParams).toString();
-  const url = `${BASE_URL}/merchants?${queryString}`;
-
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ token: string }> },
+) {
+  const { token } = await params;
+  const denied = await requireRole(request, ['admin', 'superadmin']);
+  if (denied) return denied;
   try {
-    const timestamp = Math.floor(Date.now() / 1000).toString();
-    const body = '{}';
-    const signature = generateSignature(body, timestamp);
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-        'x-timestamp': timestamp,
-        'x-signature': signature,
-      },
-    });
-
-    const data = await response.json();
-    return NextResponse.json(data);
+    const { status, data } = await ukasirFetch(`/merchants/${token}`);
+    return NextResponse.json(data, { status });
   } catch (error) {
+    console.error('Failed to fetch merchant:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch merchants' },
-      { status: 500 }
+      { success: false, error: 'Failed to fetch merchant' },
+      { status: 500 },
     );
   }
 }
 
-export async function PUT(request: NextRequest) {
-  const token = request.nextUrl.pathname.split('/').pop();
-  const body = await request.json();
-
-  const url = `${BASE_URL}/merchants/${token}`;
-
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ token: string }> },
+) {
+  const { token } = await params;
+  const denied = await requireRole(request, ['admin', 'superadmin']);
+  if (denied) return denied;
   try {
-    const timestamp = Math.floor(Date.now() / 1000).toString();
-    const bodyString = JSON.stringify(body);
-    const signature = generateSignature(bodyString, timestamp);
-
-    const response = await fetch(url, {
+    const body = await request.json();
+    const { status, data } = await ukasirFetch(`/merchants/${token}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-        'x-timestamp': timestamp,
-        'x-signature': signature,
-      },
-      body: bodyString,
+      body,
     });
-
-    const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(data, { status });
   } catch (error) {
+    console.error('Failed to update merchant:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to update merchant' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-export async function DELETE(request: NextRequest) {
-  const token = request.nextUrl.pathname.split('/').pop();
-  const url = `${BASE_URL}/merchants/${token}`;
-
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ token: string }> },
+) {
+  const { token } = await params;
+  const denied = await requireRole(request, ['admin', 'superadmin']);
+  if (denied) return denied;
   try {
-    const timestamp = Math.floor(Date.now() / 1000).toString();
-    const body = '{}';
-    const signature = generateSignature(body, timestamp);
-
-    const response = await fetch(url, {
+    const { status, data } = await ukasirFetch(`/merchants/${token}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-        'x-timestamp': timestamp,
-        'x-signature': signature,
-      },
     });
-
-    const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(data, { status });
   } catch (error) {
+    console.error('Failed to delete merchant:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to delete merchant' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

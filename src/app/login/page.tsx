@@ -23,16 +23,16 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await api.post('/api/auth/login', {
+      const response = await api.post('/api/proxy/auth/login', {
         email, 
         password
       });
 
-      if (response.data.success) {
-        const { token, refreshToken, user } = response.data.data;
+      if (response.data.status === 'success') {
+        const { token, role } = response.data.data;
 
         // Only allow admin or superadmin to log in
-        if (user.role !== 'admin' && user.role !== 'superadmin') {
+        if (role !== 'admin' && role !== 'superadmin') {
           setError('Access Denied: Only administrators can access this portal.');
           setIsLoading(false);
           return;
@@ -40,8 +40,10 @@ export default function LoginPage() {
 
         // Save to local storage
         localStorage.setItem('token', token);
-        localStorage.setItem('refreshToken', refreshToken);
-        localStorage.setItem('user', JSON.stringify(user));
+        
+        // Since API doesn't return full user info, we store what we have
+        const userObj = { role, name: 'Admin User' }; // Mock name since API doesn't provide it
+        localStorage.setItem('user', JSON.stringify(userObj));
         
         // Redirect to dashboard
         router.push('/dashboard');
@@ -64,11 +66,11 @@ export default function LoginPage() {
     setForgotLoading(true);
 
     try {
-      const response = await api.post('/api/auth/forgot-password', {
+      const response = await api.post('/api/proxy/auth/forgot-password', {
         email: forgotEmail
       });
 
-      if (response.data.success) {
+      if (response.data.status === 'success') {
         setForgotSuccess(true);
         setForgotEmail('');
       }

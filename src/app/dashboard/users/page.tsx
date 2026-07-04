@@ -64,8 +64,8 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/api/users');
-      if (response.data.success) {
+      const response = await api.get('/api/proxy/users');
+      if (response.data.status === 'success') {
         setUsers(response.data.data);
       }
     } catch (err: any) {
@@ -121,14 +121,14 @@ export default function UsersPage() {
         const payload = { ...formData };
         if (!payload.password) delete (payload as any).password;
 
-        const response = await api.put(`/api/users/${editingUser.id}`, payload);
-        if (response.data.success) {
+        const response = await api.put(`/api/proxy/users/${editingUser.id}`, payload);
+        if (response.data.status === 'success') {
           notify(response.data.message || 'User updated successfully!', 'success');
           finishSubmission();
         }
       } else {
-        const response = await api.post('/api/users', formData);
-        if (response.data.success) {
+        const response = await api.post('/api/proxy/users', formData);
+        if (response.data.status === 'success') {
           notify(response.data.message || 'User created successfully!', 'success');
           finishSubmission();
         }
@@ -155,10 +155,10 @@ export default function UsersPage() {
   const handleEdit = (user: UserData) => {
     setEditingUser(user);
     setFormData({
-      name: user.name,
-      username: user.username,
+      name: user.name || '',
+      username: user.username || user.email || '',
       password: '',
-      role: user.role,
+      role: user.role || 'user',
       email: user.email || ''
     });
     setIsModalOpen(true);
@@ -167,10 +167,10 @@ export default function UsersPage() {
   const toggleStatus = async (user: UserData) => {
     setTogglingId(user.id);
     try {
-      const response = await api.put(`/api/users/${user.id}`, {
+      const response = await api.put(`/api/proxy/users/${user.id}`, {
         status: !user.status
       });
-      if (response.data.success) {
+      if (response.data.status === 'success') {
         setUsers(users.map(u => u.id === user.id ? { ...u, status: !u.status } : u));
         notify(`User ${!user.status ? 'activated' : 'deactivated'} successfully!`, 'success');
       }
@@ -184,8 +184,8 @@ export default function UsersPage() {
   const handleDelete = async (id: string) => {
     setIsDeleting(true);
     try {
-      const response = await api.delete(`/api/users/${id}`);
-      if (response.data.success) {
+      const response = await api.delete(`/api/proxy/users/${id}`);
+      if (response.data.status === 'success') {
         notify(response.data.message || 'User deleted successfully!', 'success');
         setShowDeleteConfirm(null);
         fetchUsers();
