@@ -3,10 +3,11 @@ import { fetchBackoffice } from '@/lib/backoffice';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const response = await fetchBackoffice(`/api/v1/backoffice/partnership/user/${params.id}`, { 
+    const { id } = await params;
+    const response = await fetchBackoffice(`/api/v1/backoffice/partnership/user/${id}`, { 
       method: 'GET', 
       req 
     });
