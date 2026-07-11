@@ -24,8 +24,13 @@ if (rawKey.includes(beginMarker) && rawKey.includes(endMarker)) {
     rawKey.indexOf(endMarker)
   );
   
-  // Remove all whitespace, literal \n, literal \r, and any surrounding quotes
-  base64Data = base64Data.replace(/\\n/g, '').replace(/\\r/g, '').replace(/['"]/g, '').replace(/\s+/g, '');
+  // 1. Remove any combination of escaped newlines (e.g. \n, \\n, \\\n)
+  // This prevents 'n' from being left behind and corrupting the Base64.
+  base64Data = base64Data.replace(/(?:\\+)[nrt]/g, '');
+  
+  // 2. Remove EVERYTHING else that isn't a valid Base64 character
+  // (This automatically handles actual newlines, spaces, quotes, stray backslashes, etc)
+  base64Data = base64Data.replace(/[^a-zA-Z0-9+/=]/g, '');
   
   // Chunk into 64 characters
   const chunks = [];
