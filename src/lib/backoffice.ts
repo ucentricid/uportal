@@ -5,16 +5,33 @@ const API_URL = process.env.BACKOFFICE_API_URL || 'https://api-dev.ucentric.id';
 const API_KEY = process.env.BACKOFFICE_API_KEY || '';
 const API_SECRET = process.env.BACKOFFICE_API_SECRET || '';
 
-let rawKey = process.env.BACKOFFICE_RSA_PRIVATE_KEY || '';
-if (rawKey.startsWith('"') && rawKey.endsWith('"')) {
-  rawKey = rawKey.slice(1, -1);
+const rawKey = process.env.BACKOFFICE_RSA_PRIVATE_KEY || '';
+let RSA_PRIVATE_KEY = '';
+
+const beginMarker = '-----BEGIN RSA PRIVATE KEY-----';
+const endMarker = '-----END RSA PRIVATE KEY-----';
+
+if (rawKey.includes(beginMarker) && rawKey.includes(endMarker)) {
+  // Extract base64 content between markers
+  let base64Data = rawKey.substring(
+    rawKey.indexOf(beginMarker) + beginMarker.length,
+    rawKey.indexOf(endMarker)
+  );
+  
+  // Remove all whitespace, literal \n, literal \r, and any surrounding quotes
+  base64Data = base64Data.replace(/\\n/g, '').replace(/\\r/g, '').replace(/['"]/g, '').replace(/\s+/g, '');
+  
+  // Chunk into 64 characters
+  const chunks = [];
+  for (let i = 0; i < base64Data.length; i += 64) {
+    chunks.push(base64Data.substring(i, i + 64));
+  }
+  
+  RSA_PRIVATE_KEY = `${beginMarker}\n${chunks.join('\n')}\n${endMarker}\n`;
+} else {
+  // Fallback
+  RSA_PRIVATE_KEY = rawKey.replace(/\\n/g, '\n');
 }
-// Foolproof way to handle both literal `\n` and actual newlines
-const RSA_PRIVATE_KEY = rawKey
-  .split(/\\n|\n/)
-  .map(line => line.trim())
-  .filter(line => line.length > 0)
-  .join('\n') + '\n';
 
 interface BackofficeFetchOptions extends RequestInit {
   req?: NextRequest;
