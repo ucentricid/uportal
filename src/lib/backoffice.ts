@@ -4,7 +4,17 @@ import crypto from 'crypto';
 const API_URL = process.env.BACKOFFICE_API_URL || 'https://api-dev.ucentric.id';
 const API_KEY = process.env.BACKOFFICE_API_KEY || '';
 const API_SECRET = process.env.BACKOFFICE_API_SECRET || '';
-const RSA_PRIVATE_KEY = (process.env.BACKOFFICE_RSA_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+
+let rawKey = process.env.BACKOFFICE_RSA_PRIVATE_KEY || '';
+if (rawKey.startsWith('"') && rawKey.endsWith('"')) {
+  rawKey = rawKey.slice(1, -1);
+}
+// Foolproof way to handle both literal `\n` and actual newlines
+const RSA_PRIVATE_KEY = rawKey
+  .split(/\\n|\n/)
+  .map(line => line.trim())
+  .filter(line => line.length > 0)
+  .join('\n') + '\n';
 
 interface BackofficeFetchOptions extends RequestInit {
   req?: NextRequest;
