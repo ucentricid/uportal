@@ -11,6 +11,12 @@ let RSA_PRIVATE_KEY = '';
 const beginMarker = '-----BEGIN RSA PRIVATE KEY-----';
 const endMarker = '-----END RSA PRIVATE KEY-----';
 
+console.log("[DEBUG RSA] Module Load - Raw key length:", rawKey.length);
+console.log("[DEBUG RSA] Includes BEGIN:", rawKey.includes(beginMarker));
+console.log("[DEBUG RSA] Includes END:", rawKey.includes(endMarker));
+console.log("[DEBUG RSA] Prefix preview:", rawKey.substring(0, 60).replace(/\n/g, '\\n'));
+console.log("[DEBUG RSA] Suffix preview:", rawKey.substring(Math.max(0, rawKey.length - 60)).replace(/\n/g, '\\n'));
+
 if (rawKey.includes(beginMarker) && rawKey.includes(endMarker)) {
   // Extract base64 content between markers
   let base64Data = rawKey.substring(
@@ -28,9 +34,11 @@ if (rawKey.includes(beginMarker) && rawKey.includes(endMarker)) {
   }
   
   RSA_PRIVATE_KEY = `${beginMarker}\n${chunks.join('\n')}\n${endMarker}\n`;
+  console.log("[DEBUG RSA] Successfully reconstructed PEM from Base64 chunks. Final length:", RSA_PRIVATE_KEY.length);
 } else {
   // Fallback
   RSA_PRIVATE_KEY = rawKey.replace(/\\n/g, '\n');
+  console.log("[DEBUG RSA] Markers missing! Using fallback raw replace. Final length:", RSA_PRIVATE_KEY.length);
 }
 
 interface BackofficeFetchOptions extends RequestInit {
@@ -63,11 +71,22 @@ export async function fetchBackoffice(path: string, options: BackofficeFetchOpti
   
   const dataToSign = `${method}:${cleanPath}:${timestamp}:${bodyString}`;
   if (RSA_PRIVATE_KEY) {
-    const sign = crypto.createSign('RSA-SHA256');
-    sign.update(dataToSign);
-    sign.end();
-    const signatureBase64 = sign.sign(RSA_PRIVATE_KEY, 'base64');
-    mergedHeaders.set('X-Signature', signatureBase64);
+    try {
+      const sign = crypto.createSign('RSA-SHA256');
+      sign.update(dataToSign);
+      sign.end();
+      const signatureBase64 = sign.sign(RSA_PRIVATE_KEY, 'base64');
+      mergedHeaders.set('X-Signature', signatureBase64);
+    } catch (error: any) {
+      console.error("[DEBUG RSA] === SIGNATURE GENERATION FAILED ===");
+      console.error("[DEBUG RSA] Error:", error.message);
+      console.error("[DEBUG RSA] PEM Header OK?:", RSA_PRIVATE_KEY.startsWith('-----BEGIN'));
+      console.error("[DEBUG RSA] PEM Footer OK?:", RSA_PRIVATE_KEY.trim().endsWith('-----END RSA PRIVATE KEY-----'));
+      console.error("[DEBUG RSA] Key snippet:", RSA_PRIVATE_KEY.substring(0, 80).replace(/\n/g, '\\n') + "...");
+      console.error("[DEBUG RSA] ===================================");
+    }
+  } else {
+    console.warn("[DEBUG RSA] RSA_PRIVATE_KEY is empty. Signature skipped.");
   }
 
   // Default to JSON if not sending FormData
